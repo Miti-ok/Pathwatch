@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Pathbreaker – Map Builder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- Title -->
+        <header class="header">
+            <h1>Pathbreaker</h1>
+            <p>Robot Navigation & Path Planning Visualizer</p>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="container">
+
+            <!-- GRID (JS injects cells here) -->
+            <div id="grid" class="grid"></div>
+
+            <!-- CONTROLS -->
+            <div class="controls">
+
+                <p id="obstacleLimitText" class="obstacle-limit"></p>
+                <label for="brushSize" class="controls-note">Brush Size: <span id="brushSizeValue">1</span>x<span id="brushSizeValueMirror">1</span></label>
+                <input
+                    type="range"
+                    id="brushSize"
+                    min="1"
+                    max="6"
+                    value="1"
+                />
+
+                <button id="confirmBtn" class="btn primary">
+                    Confirm Map
+                </button>
+
+                <button id="resetBtn" class="btn">
+                    Reset
+                </button>
+
+                <!-- Legend -->
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-box start"></span> Start
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-box end"></span> End
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-box obstacle"></span> Obstacle
+                    </div>
+                </div>
+                <p class="controls-note">Click on the grid to place obstacles.</p>
+                <p class="controls-note">Drag the Start and End cells to change their positions.</p>
+
+            </div>
+        </div>
+
+        <div class="footer">
+          Built by 
+          <a href="https://github.com/Miti-ok" 
+             target="_blank" 
+             class="footer-link">
+             Mitul
+          </a>
+          · Path Planning Explorer
+        </div>
+
+    </div>
+
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

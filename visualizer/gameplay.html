@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pathwatch - Algorithm Visualizer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Pathwatch</h1>
+
+<div class="game-hud">
+    <div class="objective-text">
+        Visualize how different path planning algorithms explore the same map.
+    </div>
+
+    <div class="algo-controls">
+        <label for="algoSelect">Algorithm</label>
+        <select id="algoSelect">
+            <option value="bfs">BFS</option>
+            <option value="astar">A*</option>
+            <option value="greedy">Greedy Best-First</option>
+        </select>
+
+        <label for="speedRange">Speed</label>
+        <input id="speedRange" type="range" min="1" max="40" value="8" />
+
+        <button id="runBtn" class="algo-btn">Visualize</button>
+        <button id="clearBtn" class="algo-btn">Clear Run</button>
+    </div>
+
+    <div id="statusText" class="status-text">Ready. Choose an algorithm and click Visualize.</div>
+</div>
+
+<div class="grid-stack">
+    <div id="grid" class="gameplay-grid"></div>
+
+    <button id="compareBtn" class="algo-btn compare-below-btn">Compare All</button>
+
+    <section id="comparePanel" class="compare-panel" hidden>
+        <h3>Algorithm Comparison</h3>
+        <p class="compare-note">Compute time is estimated as median across 9 runs on this map.</p>
+
+        <div class="chart-block">
+            <div class="chart-title">Explored Nodes</div>
+            <div id="chartExplored" class="chart-bars"></div>
+        </div>
+
+        <div class="chart-block">
+            <div class="chart-title">Path Length</div>
+            <div id="chartPath" class="chart-bars"></div>
+        </div>
+
+        <div class="chart-block">
+            <div class="chart-title">Compute Time (ms)</div>
+            <div id="chartTime" class="chart-bars"></div>
+        </div>
+    </section>
+
+    <div class="legend algo-legend">
+        <div class="legend-item">
+            <span class="legend-box start"></span> Start
+        </div>
+        <div class="legend-item">
+            <span class="legend-box end"></span> End
+        </div>
+        <div class="legend-item">
+            <span class="legend-box obstacle"></span> Obstacle
+        </div>
+        <div class="legend-item">
+            <span class="legend-box explored"></span> Explored
+        </div>
+        <div class="legend-item">
+            <span class="legend-box path"></span> Final Path
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+  Built by
+  <a href="https://github.com/Miti-ok" target="_blank" class="footer-link">
+     Mitul
+  </a>
+  - Path Planning Explorer
+</div>
+
+<script src="gameplay.js"></script>
+
+</body>
+</html>

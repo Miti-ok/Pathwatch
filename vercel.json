@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "routes": [
+    { "src": "^/$", "dest": "/visualizer/index.html" },
+    { "src": "^/gameplay$", "dest": "/visualizer/gameplay.html" },
+    { "src": "^/(.*)$", "dest": "/visualizer/$1" }
+  ]
+}
