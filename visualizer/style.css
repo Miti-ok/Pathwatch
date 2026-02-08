@@ -15,6 +15,7 @@ body {
   text-align: center;
   margin: 0;
   padding: var(--page-padding);
+  overflow-x: hidden;
 }
 
 h1 {
@@ -29,6 +30,8 @@ h1 {
 .container {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 40px;
 }
 
@@ -42,6 +45,7 @@ h1 {
   gap: var(--grid-cell-gap, var(--cell-gap));
   box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
   width: max-content;
+  max-width: 100%;
   touch-action: none;
 }
 
@@ -432,8 +436,14 @@ footer {
     font-size: 2rem;
   }
 
+  #grid {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
   .game-hud {
     margin-bottom: 12px;
+    max-width: 100%;
   }
 
   button {
@@ -463,5 +473,6 @@ footer {
   :root {
     --cell-size: 34px;
     --cell-gap: 4px;
+    --page-padding: 12px;
   }
 }

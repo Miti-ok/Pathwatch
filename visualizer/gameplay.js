@@ -63,6 +63,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     buildGrid();
+    window.addEventListener("resize", updateGridLayoutOnly);
+    window.addEventListener("orientationchange", updateGridLayoutOnly);
 
     runBtnEl.addEventListener("click", runVisualization);
     compareBtnEl.addEventListener("click", onCompareClick);
@@ -132,20 +134,38 @@ function getNeighbors(index) {
 function applyGridSizing() {
     const largeGrid = rows >= 80 || cols >= 80;
     if (largeGrid) {
-        gridEl.style.setProperty("--grid-cell-size", "5px");
-        gridEl.style.setProperty("--grid-cell-gap", "1px");
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 390;
+        const horizontalPadding = viewportWidth <= 640 ? 20 : 40;
+        const available = Math.max(220, viewportWidth - horizontalPadding);
+        const maxGrid = Math.max(rows, cols);
+
+        let gap = 1;
+        let cellSize = Math.floor((available - 28 - gap * (maxGrid - 1)) / maxGrid);
+        if (cellSize < 4) {
+            gap = 0;
+            cellSize = Math.floor((available - 28) / maxGrid);
+        }
+
+        cellSize = Math.max(2, Math.min(5, cellSize));
+        gridEl.style.setProperty("--grid-cell-size", `${cellSize}px`);
+        gridEl.style.setProperty("--grid-cell-gap", `${gap}px`);
     } else {
         gridEl.style.setProperty("--grid-cell-size", "48px");
         gridEl.style.setProperty("--grid-cell-gap", "6px");
     }
 }
 
-function buildGrid() {
-    gridEl.innerHTML = "";
-    cellEls = [];
+function updateGridLayoutOnly() {
+    if (!gridEl || rows <= 0 || cols <= 0) return;
     applyGridSizing();
     gridEl.style.gridTemplateColumns = `repeat(${cols}, var(--grid-cell-size, var(--cell-size)))`;
     gridEl.style.gridTemplateRows = `repeat(${rows}, var(--grid-cell-size, var(--cell-size)))`;
+}
+
+function buildGrid() {
+    gridEl.innerHTML = "";
+    cellEls = [];
+    updateGridLayoutOnly();
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             const cell = document.createElement("div");

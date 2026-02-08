@@ -32,11 +32,21 @@ document.addEventListener("DOMContentLoaded", () => {
     let brushSize = Number(brushSizeInput.value) || 1;
 
     function applyGridSizing() {
-        // Keep large maps visually close to the original 8x8 layout style,
-        // but slightly bigger as requested.
         if (GRID_SIZE >= 80) {
-            gridEl.style.setProperty("--grid-cell-size", "5px");
-            gridEl.style.setProperty("--grid-cell-gap", "1px");
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 390;
+            const horizontalPadding = viewportWidth <= 640 ? 20 : 40;
+            const available = Math.max(220, viewportWidth - horizontalPadding);
+
+            let gap = 1;
+            let cellSize = Math.floor((available - 28 - gap * (GRID_SIZE - 1)) / GRID_SIZE);
+            if (cellSize < 4) {
+                gap = 0;
+                cellSize = Math.floor((available - 28) / GRID_SIZE);
+            }
+
+            cellSize = Math.max(2, Math.min(5, cellSize));
+            gridEl.style.setProperty("--grid-cell-size", `${cellSize}px`);
+            gridEl.style.setProperty("--grid-cell-gap", `${gap}px`);
             return;
         }
 
@@ -307,6 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
     gridEl.addEventListener("dragstart", (e) => e.preventDefault());
     window.addEventListener("pointerup", (e) => clearDragging(e.pointerId));
     window.addEventListener("pointercancel", (e) => clearDragging(e.pointerId));
+    window.addEventListener("resize", () => {
+        applyGridSizing();
+    });
+    window.addEventListener("orientationchange", () => {
+        applyGridSizing();
+    });
 
     // ================================
     // START
