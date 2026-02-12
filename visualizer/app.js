@@ -241,7 +241,16 @@ document.addEventListener("DOMContentLoaded", () => {
     function pathExists(start, end) {
         const queue = [start];
         const visited = new Set([start.join(",")]);
-        const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        const dirs = [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+        ];
 
         while (queue.length) {
             const [r, c] = queue.shift();
@@ -255,6 +264,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (nr < 0 || nc < 0 || nr >= GRID_SIZE || nc >= GRID_SIZE) continue;
                 if (visited.has(key)) continue;
                 if (gridState[nr][nc] === "obstacle") continue;
+                const isDiagonal = dr !== 0 && dc !== 0;
+                if (isDiagonal) {
+                    // Match gameplay rule: disallow diagonal when both adjacent side cells are blocked.
+                    if (
+                        gridState[r + dr][c] === "obstacle" &&
+                        gridState[r][c + dc] === "obstacle"
+                    ) {
+                        continue;
+                    }
+                }
 
                 visited.add(key);
                 queue.push([nr, nc]);

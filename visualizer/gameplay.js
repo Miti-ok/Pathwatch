@@ -107,7 +107,7 @@ function getAlgorithmMeta(key) { return ALGORITHMS.find(a => a.key === key) || A
 function manhattan(indexA, indexB) {
     const [ar, ac] = fromIndex(indexA);
     const [br, bc] = fromIndex(indexB);
-    return Math.abs(ar - br) + Math.abs(ac - bc);
+    return Math.max(Math.abs(ar - br), Math.abs(ac - bc));
 }
 
 function euclidean(indexA, indexB) {
@@ -120,10 +120,28 @@ function euclidean(indexA, indexB) {
 
 function getNeighbors(index) {
     const [r, c] = fromIndex(index);
-    const next = [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]];
+    const next = [
+        [r + 1, c],
+        [r - 1, c],
+        [r, c + 1],
+        [r, c - 1],
+        [r + 1, c + 1],
+        [r + 1, c - 1],
+        [r - 1, c + 1],
+        [r - 1, c - 1],
+    ];
     const out = [];
     for (const [nr, nc] of next) {
         if (!inBoundsRC(nr, nc)) continue;
+        const dr = nr - r;
+        const dc = nc - c;
+        const isDiagonal = dr !== 0 && dc !== 0;
+        if (isDiagonal) {
+            // Prevent diagonal squeeze through blocked corner pair.
+            const sideA = toIndex(r + dr, c);
+            const sideB = toIndex(r, c + dc);
+            if (blocked[sideA] && blocked[sideB]) continue;
+        }
         const nb = toIndex(nr, nc);
         if (!isFreeIndex(nb)) continue;
         out.push(nb);
