@@ -148,10 +148,7 @@ function getNeighbors(index) {
         if (!inBoundsRC(nr, nc)) continue;
         const nb = toIndex(nr, nc);
         if (!isFreeIndex(nb)) continue;
-        out.push({
-            index: nb,
-            cost: 1,
-        });
+        out.push(nb);
     }
     return out;
 }
@@ -412,8 +409,7 @@ function runBfs() {
         const cur = queue[head++];
         expanded.push(cur);
         if (cur === endIndex) break;
-        for (const edge of getNeighbors(cur)) {
-            const nb = edge.index;
+        for (const nb of getNeighbors(cur)) {
             if (visited[nb]) continue;
             visited[nb] = 1;
             cameFrom[nb] = cur;
@@ -497,10 +493,9 @@ function runAStarCore(weight) {
         closed[cur] = 1;
         expanded.push(cur);
         if (cur === endIndex) break;
-        for (const edge of getNeighbors(cur)) {
-            const nb = edge.index;
+        for (const nb of getNeighbors(cur)) {
             if (closed[nb]) continue;
-            const tentative = gScore[cur] + edge.cost;
+            const tentative = gScore[cur] + 1;
             if (tentative < gScore[nb]) {
                 gScore[nb] = tentative;
                 cameFrom[nb] = cur;
@@ -529,8 +524,7 @@ function runGreedyBestFirst() {
         const cur = node.index;
         expanded.push(cur);
         if (cur === endIndex) break;
-        for (const edge of getNeighbors(cur)) {
-            const nb = edge.index;
+        for (const nb of getNeighbors(cur)) {
             if (visited[nb]) continue;
             visited[nb] = 1;
             cameFrom[nb] = cur;

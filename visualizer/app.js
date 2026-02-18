@@ -194,8 +194,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!best) return null;
-        // Slightly permissive threshold so visual gaps still map to nearest cell.
-        if (best.score > 1.55) return null;
+        // Always snap to nearest hex center while pointer is inside grid bounds.
+        // This makes painting continuous across tiny visual gaps.
         return { r: best.r, c: best.c };
     }
 
