@@ -6,6 +6,7 @@
 :root {
   --cell-size: 48px;
   --cell-gap: 6px;
+  --hex-row-step: calc(var(--cell-size) * 0.78);
   --page-padding: 30px;
 }
 
@@ -41,7 +42,7 @@ h1 {
   border-radius: 16px;
   display: grid;
   grid-template-columns: repeat(8, var(--grid-cell-size, var(--cell-size)));
-  grid-template-rows: repeat(8, var(--grid-cell-size, var(--cell-size)));
+  grid-template-rows: repeat(8, var(--hex-row-step, var(--grid-cell-size, var(--cell-size))));
   gap: var(--grid-cell-gap, var(--cell-gap));
   box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
   width: max-content;
@@ -65,9 +66,15 @@ h1 {
 
 .cell {
   background: #2a3448;
-  border-radius: 8px;
+  width: var(--grid-cell-size, var(--cell-size));
+  height: calc(var(--grid-cell-size, var(--cell-size)) * 0.9);
+  clip-path: polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0 50%);
   cursor: pointer;
   transition: transform 0.1s, background 0.2s;
+}
+
+.cell.odd-row {
+  transform: translateX(calc((var(--grid-cell-size, var(--cell-size)) + var(--grid-cell-gap, var(--cell-gap))) * 0.5));
 }
 .footer {
   text-align: center;
@@ -90,7 +97,7 @@ h1 {
 
 
 .cell:hover {
-  transform: scale(1.05);
+  filter: brightness(1.08);
 }
 .robot{
     background-color: cyan;

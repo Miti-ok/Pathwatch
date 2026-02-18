@@ -107,11 +107,9 @@ function getAlgorithmMeta(key) { return ALGORITHMS.find(a => a.key === key) || A
 function manhattan(indexA, indexB) {
     const [ar, ac] = fromIndex(indexA);
     const [br, bc] = fromIndex(indexB);
-    const dr = Math.abs(ar - br);
-    const dc = Math.abs(ac - bc);
-    const dMin = Math.min(dr, dc);
-    const dMax = Math.max(dr, dc);
-    return (dMax - dMin) + dMin * Math.SQRT2;
+    const dr = ar - br;
+    const dc = ac - bc;
+    return Math.sqrt(dr * dr + dc * dc);
 }
 
 function euclidean(indexA, indexB) {
@@ -124,36 +122,34 @@ function euclidean(indexA, indexB) {
 
 function getNeighbors(index) {
     const [r, c] = fromIndex(index);
-    const next = [
-        [r + 1, c],
-        [r - 1, c],
-        [r, c + 1],
-        [r, c - 1],
-        [r + 1, c + 1],
-        [r + 1, c - 1],
-        [r - 1, c + 1],
-        [r - 1, c - 1],
-    ];
+    const evenRow = r % 2 === 0;
+    const next = evenRow
+        ? [[r - 1, c - 1], [r - 1, c], [r, c - 1], [r, c + 1], [r + 1, c - 1], [r + 1, c]]
+        : [[r - 1, c], [r - 1, c + 1], [r, c - 1], [r, c + 1], [r + 1, c], [r + 1, c + 1]];
     const out = [];
     for (const [nr, nc] of next) {
         if (!inBoundsRC(nr, nc)) continue;
-        const dr = nr - r;
-        const dc = nc - c;
-        const isDiagonal = dr !== 0 && dc !== 0;
-        if (isDiagonal) {
-            // Prevent diagonal squeeze through blocked corner pair.
-            const sideA = toIndex(r + dr, c);
-            const sideB = toIndex(r, c + dc);
-            if (blocked[sideA] && blocked[sideB]) continue;
-        }
         const nb = toIndex(nr, nc);
         if (!isFreeIndex(nb)) continue;
         out.push({
             index: nb,
-            cost: isDiagonal ? Math.SQRT2 : 1,
+            cost: 1,
         });
     }
     return out;
+}
+
+function oddRToCube(r, c) {
+    const x = c - (r - (r & 1)) / 2;
+    const z = r;
+    const y = -x - z;
+    return [x, y, z];
+}
+
+function hexDistance(r1, c1, r2, c2) {
+    const [x1, y1, z1] = oddRToCube(r1, c1);
+    const [x2, y2, z2] = oddRToCube(r2, c2);
+    return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2), Math.abs(z1 - z2));
 }
 
 function applyGridSizing() {
@@ -174,9 +170,11 @@ function applyGridSizing() {
         cellSize = Math.max(2, Math.min(5, cellSize));
         gridEl.style.setProperty("--grid-cell-size", `${cellSize}px`);
         gridEl.style.setProperty("--grid-cell-gap", `${gap}px`);
+        gridEl.style.setProperty("--hex-row-step", `${Math.max(2, cellSize * 0.78)}px`);
     } else {
         gridEl.style.setProperty("--grid-cell-size", "48px");
         gridEl.style.setProperty("--grid-cell-gap", "6px");
+        gridEl.style.setProperty("--hex-row-step", `${48 * 0.78}px`);
     }
 }
 
@@ -184,7 +182,7 @@ function updateGridLayoutOnly() {
     if (!gridEl || rows <= 0 || cols <= 0) return;
     applyGridSizing();
     gridEl.style.gridTemplateColumns = `repeat(${cols}, var(--grid-cell-size, var(--cell-size)))`;
-    gridEl.style.gridTemplateRows = `repeat(${rows}, var(--grid-cell-size, var(--cell-size)))`;
+    gridEl.style.gridTemplateRows = `repeat(${rows}, var(--hex-row-step, var(--grid-cell-size, var(--cell-size))))`;
 }
 
 function buildGrid() {
@@ -195,6 +193,7 @@ function buildGrid() {
         for (let c = 0; c < cols; c++) {
             const cell = document.createElement("div");
             cell.className = "cell";
+            if (r % 2 === 1) cell.classList.add("odd-row");
             const idx = toIndex(r, c);
             if (idx === startIndex) cell.classList.add("start");
             else if (idx === endIndex) cell.classList.add("end");

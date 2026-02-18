@@ -47,11 +47,13 @@ document.addEventListener("DOMContentLoaded", () => {
             cellSize = Math.max(2, Math.min(5, cellSize));
             gridEl.style.setProperty("--grid-cell-size", `${cellSize}px`);
             gridEl.style.setProperty("--grid-cell-gap", `${gap}px`);
+            gridEl.style.setProperty("--hex-row-step", `${Math.max(2, cellSize * 0.78)}px`);
             return;
         }
 
         gridEl.style.setProperty("--grid-cell-size", "48px");
         gridEl.style.setProperty("--grid-cell-gap", "6px");
+        gridEl.style.setProperty("--hex-row-step", `${48 * 0.78}px`);
     }
 
     // ================================
@@ -62,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
         gridState = [];
         applyGridSizing();
         gridEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, var(--grid-cell-size, var(--cell-size)))`;
-        gridEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, var(--grid-cell-size, var(--cell-size)))`;
+        gridEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, var(--hex-row-step, var(--grid-cell-size, var(--cell-size))))`;
 
         for (let r = 0; r < GRID_SIZE; r++) {
             gridState[r] = [];
@@ -71,6 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const cell = document.createElement("div");
                 cell.className = "cell";
+                if (r % 2 === 1) cell.classList.add("odd-row");
                 cell.dataset.row = r;
                 cell.dataset.col = c;
 
@@ -144,31 +147,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getCellFromPointer(clientX, clientY) {
-        const rect = gridEl.getBoundingClientRect();
-        if (
-            clientX < rect.left || clientX > rect.right ||
-            clientY < rect.top || clientY > rect.bottom
-        ) {
-            return null;
-        }
-
-        const style = getComputedStyle(gridEl);
-        const paddingLeft = parseFloat(style.paddingLeft) || 0;
-        const paddingTop = parseFloat(style.paddingTop) || 0;
-        const cellSize = parseFloat(style.getPropertyValue("--grid-cell-size")) || 0;
-        const gap = parseFloat(style.getPropertyValue("--grid-cell-gap")) || 0;
-        const step = cellSize + gap;
-        if (step <= 0) return null;
-
-        const x = clientX - rect.left - paddingLeft;
-        const y = clientY - rect.top - paddingTop;
-        if (x < 0 || y < 0) return null;
-
-        const c = Math.floor(x / step);
-        const r = Math.floor(y / step);
-        if (r < 0 || c < 0 || r >= GRID_SIZE || c >= GRID_SIZE) return null;
-
-        return { r, c };
+        const target = document.elementFromPoint(clientX, clientY);
+        if (!target) return null;
+        const cell = target.closest(".cell");
+        if (!cell) return null;
+        return {
+            r: Number(cell.dataset.row),
+            c: Number(cell.dataset.col),
+        };
     }
 
     function onGridPointerDown(e) {
@@ -225,6 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const c = Number(cell.dataset.col);
 
             cell.className = "cell";
+            if (r % 2 === 1) cell.classList.add("odd-row");
             if (gridState[r][c] === "start") cell.classList.add("start");
             if (gridState[r][c] === "end") cell.classList.add("end");
             if (gridState[r][c] === "obstacle") cell.classList.add("obstacle");
@@ -241,45 +228,31 @@ document.addEventListener("DOMContentLoaded", () => {
     function pathExists(start, end) {
         const queue = [start];
         const visited = new Set([start.join(",")]);
-        const dirs = [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-            [1, 1],
-            [1, -1],
-            [-1, 1],
-            [-1, -1],
-        ];
 
         while (queue.length) {
             const [r, c] = queue.shift();
             if (r === end[0] && c === end[1]) return true;
 
-            for (const [dr, dc] of dirs) {
-                const nr = r + dr;
-                const nc = c + dc;
+            for (const [nr, nc] of getHexNeighbors(r, c)) {
                 const key = `${nr},${nc}`;
 
                 if (nr < 0 || nc < 0 || nr >= GRID_SIZE || nc >= GRID_SIZE) continue;
                 if (visited.has(key)) continue;
                 if (gridState[nr][nc] === "obstacle") continue;
-                const isDiagonal = dr !== 0 && dc !== 0;
-                if (isDiagonal) {
-                    // Match gameplay rule: disallow diagonal when both adjacent side cells are blocked.
-                    if (
-                        gridState[r + dr][c] === "obstacle" &&
-                        gridState[r][c + dc] === "obstacle"
-                    ) {
-                        continue;
-                    }
-                }
 
                 visited.add(key);
                 queue.push([nr, nc]);
             }
         }
         return false;
+    }
+
+    function getHexNeighbors(r, c) {
+        const evenRow = r % 2 === 0;
+        const dirs = evenRow
+            ? [[-1, -1], [-1, 0], [0, -1], [0, 1], [1, -1], [1, 0]]
+            : [[-1, 0], [-1, 1], [0, -1], [0, 1], [1, 0], [1, 1]];
+        return dirs.map(([dr, dc]) => [r + dr, c + dc]);
     }
 
     // ================================
