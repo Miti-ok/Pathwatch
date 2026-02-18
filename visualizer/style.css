@@ -64,6 +64,29 @@ h1 {
   margin: 0 auto 10px auto;
 }
 
+.timeline-controls {
+  width: min(100%, 960px);
+  margin: 0 auto 8px auto;
+  display: grid;
+  grid-template-columns: 120px 1fr 90px;
+  align-items: center;
+  gap: 10px;
+}
+
+.timeline-controls .algo-btn {
+  margin: 0;
+}
+
+.timeline-controls input[type="range"] {
+  margin: 0;
+}
+
+.timeline-info {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
 .cell {
   background: #2a3448;
   width: var(--grid-cell-size, var(--cell-size));
@@ -473,6 +496,15 @@ footer {
 
   .bar-row {
     grid-template-columns: 120px minmax(100px, 1fr) 70px;
+  }
+
+  .timeline-controls {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .timeline-info {
+    text-align: left;
   }
 }
 

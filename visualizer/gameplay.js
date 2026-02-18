@@ -10,6 +10,9 @@ let comparePanelEl = null;
 let chartExploredEl = null;
 let chartPathEl = null;
 let chartTimeEl = null;
+let pauseBtnEl = null;
+let timelineRangeEl = null;
+let timelineInfoEl = null;
 
 let rows = 0;
 let cols = 0;
@@ -21,6 +24,13 @@ let isAnimating = false;
 let obstacleSet = new Set();
 let blocked = null;
 let freeIndices = [];
+let playback = {
+    events: [],
+    position: 0,
+    total: 0,
+    playing: false,
+    rafId: null,
+};
 
 const ALGORITHMS = [
     { key: "bfs", label: "BFS", color: "#22d3ee" },
@@ -40,6 +50,9 @@ document.addEventListener("DOMContentLoaded", () => {
     chartExploredEl = document.getElementById("chartExplored");
     chartPathEl = document.getElementById("chartPath");
     chartTimeEl = document.getElementById("chartTime");
+    pauseBtnEl = document.getElementById("pauseBtn");
+    timelineRangeEl = document.getElementById("timelineRange");
+    timelineInfoEl = document.getElementById("timelineInfo");
 
     populateAlgorithmSelect();
 
@@ -68,11 +81,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     runBtnEl.addEventListener("click", runVisualization);
     compareBtnEl.addEventListener("click", onCompareClick);
+    pauseBtnEl.addEventListener("click", onPauseResumeClick);
+    timelineRangeEl.addEventListener("input", onTimelineInput);
     clearBtnEl.addEventListener("click", () => {
-        if (isAnimating) return;
+        stopPlayback();
         clearRunVisuals();
+        resetTimelineUI();
         statusTextEl.textContent = "Cleared. Choose an algorithm and click Visualize.";
     });
+    resetTimelineUI();
 });
 
 function populateAlgorithmSelect() {
@@ -206,6 +223,109 @@ function buildGrid() {
 
 function clearRunVisuals() {
     for (let i = 0; i < cellEls.length; i++) cellEls[i].classList.remove("explored", "path");
+}
+
+function resetTimelineUI() {
+    playback.events = [];
+    playback.position = 0;
+    playback.total = 0;
+    playback.playing = false;
+    if (playback.rafId) {
+        cancelAnimationFrame(playback.rafId);
+        playback.rafId = null;
+    }
+    if (timelineRangeEl) {
+        timelineRangeEl.min = "0";
+        timelineRangeEl.max = "0";
+        timelineRangeEl.value = "0";
+        timelineRangeEl.disabled = true;
+    }
+    if (pauseBtnEl) {
+        pauseBtnEl.disabled = true;
+        pauseBtnEl.textContent = "Pause";
+    }
+    if (timelineInfoEl) {
+        timelineInfoEl.textContent = "0 / 0";
+    }
+}
+
+function applyEventAt(index) {
+    const event = playback.events[index];
+    if (!event) return;
+    const cell = cellEls[event.idx];
+    if (!cell) return;
+    cell.classList.add(event.cls);
+}
+
+function renderToPosition(target) {
+    const clamped = Math.max(0, Math.min(playback.total, target));
+    clearRunVisuals();
+    for (let i = 0; i < clamped; i++) applyEventAt(i);
+    playback.position = clamped;
+    timelineRangeEl.value = String(clamped);
+    timelineInfoEl.textContent = `${clamped} / ${playback.total}`;
+}
+
+function stopPlayback() {
+    playback.playing = false;
+    if (playback.rafId) {
+        cancelAnimationFrame(playback.rafId);
+        playback.rafId = null;
+    }
+    isAnimating = false;
+    runBtnEl.disabled = false;
+    clearBtnEl.disabled = false;
+    compareBtnEl.disabled = false;
+    algoSelectEl.disabled = false;
+}
+
+function onPauseResumeClick() {
+    if (playback.total === 0) return;
+    if (playback.position >= playback.total) {
+        renderToPosition(0);
+        playback.playing = true;
+        pauseBtnEl.textContent = "Pause";
+        isAnimating = true;
+        playLoop();
+        return;
+    }
+    playback.playing = !playback.playing;
+    pauseBtnEl.textContent = playback.playing ? "Pause" : "Play";
+    if (playback.playing) {
+        isAnimating = true;
+        playLoop();
+    } else {
+        isAnimating = false;
+    }
+}
+
+function onTimelineInput() {
+    if (playback.total === 0) return;
+    playback.playing = false;
+    pauseBtnEl.textContent = "Play";
+    renderToPosition(Number(timelineRangeEl.value) || 0);
+}
+
+function playLoop() {
+    if (!playback.playing) return;
+    const batch = Math.max(1, Number(speedRangeEl.value) || 8);
+    const next = Math.min(playback.total, playback.position + batch);
+    for (let i = playback.position; i < next; i++) applyEventAt(i);
+    playback.position = next;
+    timelineRangeEl.value = String(playback.position);
+    timelineInfoEl.textContent = `${playback.position} / ${playback.total}`;
+
+    if (playback.position >= playback.total) {
+        playback.playing = false;
+        isAnimating = false;
+        pauseBtnEl.textContent = "Replay";
+        runBtnEl.disabled = false;
+        clearBtnEl.disabled = false;
+        compareBtnEl.disabled = false;
+        algoSelectEl.disabled = false;
+        return;
+    }
+    playback.rafId = requestAnimationFrame(playLoop);
 }
 
 class MinHeap {
@@ -914,6 +1034,8 @@ function renderBarChart(container, data, valueFormatter) {
 
 async function compareAllAlgorithms() {
     if (isAnimating) return;
+    stopPlayback();
+    resetTimelineUI();
     isAnimating = true;
     runBtnEl.disabled = true;
     clearBtnEl.disabled = true;
@@ -968,8 +1090,23 @@ function animateIndices(indices, className, skipSpecial = true) {
     });
 }
 
+function buildPlaybackEvents(result) {
+    const events = [];
+    for (const idx of result.expanded) {
+        if (idx === startIndex || idx === endIndex) continue;
+        events.push({ idx, cls: "explored" });
+    }
+    for (const idx of result.path) {
+        if (idx === startIndex || idx === endIndex) continue;
+        events.push({ idx, cls: "path" });
+    }
+    return events;
+}
+
 async function runVisualization() {
-    if (isAnimating) return;
+    if (isAnimating && playback.playing) return;
+    stopPlayback();
+    resetTimelineUI();
     isAnimating = true;
     runBtnEl.disabled = true;
     clearBtnEl.disabled = true;
@@ -984,19 +1121,28 @@ async function runVisualization() {
     const result = runAlgorithm(algoKey);
     const t1 = performance.now();
 
-    await animateIndices(result.expanded, "explored", true);
-    if (result.path.length > 0) {
-        await animateIndices(result.path, "path", true);
-        let msg = `${meta.label} finished. Explored ${result.expanded.length} nodes, path length ${pathLength(result.path)}. Compute ${Math.round(t1 - t0)} ms.`;
-        if (result.note) msg += ` ${result.note}`;
-        statusTextEl.textContent = msg;
-    } else {
-        statusTextEl.textContent = `${meta.label} finished. No path found after exploring ${result.expanded.length} nodes. Compute ${Math.round(t1 - t0)} ms.`;
+    playback.events = buildPlaybackEvents(result);
+    playback.total = playback.events.length;
+    playback.position = 0;
+    timelineRangeEl.min = "0";
+    timelineRangeEl.max = String(playback.total);
+    timelineRangeEl.value = "0";
+    timelineRangeEl.disabled = playback.total === 0;
+    pauseBtnEl.disabled = playback.total === 0;
+    pauseBtnEl.textContent = "Pause";
+    timelineInfoEl.textContent = `0 / ${playback.total}`;
+
+    let msg = result.path.length > 0
+        ? `${meta.label} finished. Explored ${result.expanded.length} nodes, path length ${pathLength(result.path)}. Compute ${Math.round(t1 - t0)} ms.`
+        : `${meta.label} finished. No path found after exploring ${result.expanded.length} nodes. Compute ${Math.round(t1 - t0)} ms.`;
+    if (result.note) msg += ` ${result.note}`;
+    statusTextEl.textContent = msg;
+
+    if (playback.total === 0) {
+        stopPlayback();
+        return;
     }
 
-    isAnimating = false;
-    runBtnEl.disabled = false;
-    clearBtnEl.disabled = false;
-    compareBtnEl.disabled = false;
-    algoSelectEl.disabled = false;
+    playback.playing = true;
+    playLoop();
 }

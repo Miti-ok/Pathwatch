@@ -147,14 +147,56 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getCellFromPointer(clientX, clientY) {
-        const target = document.elementFromPoint(clientX, clientY);
-        if (!target) return null;
-        const cell = target.closest(".cell");
-        if (!cell) return null;
-        return {
-            r: Number(cell.dataset.row),
-            c: Number(cell.dataset.col),
-        };
+        const rect = gridEl.getBoundingClientRect();
+        if (
+            clientX < rect.left || clientX > rect.right ||
+            clientY < rect.top || clientY > rect.bottom
+        ) {
+            return null;
+        }
+
+        const style = getComputedStyle(gridEl);
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingTop = parseFloat(style.paddingTop) || 0;
+        const cellW = parseFloat(style.getPropertyValue("--grid-cell-size")) || 0;
+        const gap = parseFloat(style.getPropertyValue("--grid-cell-gap")) || 0;
+        const rowStep = parseFloat(style.getPropertyValue("--hex-row-step")) || 0;
+        const cellH = cellW * 0.9;
+        const colStep = cellW + gap;
+        if (cellW <= 0 || rowStep <= 0 || colStep <= 0) return null;
+
+        const x = clientX - rect.left - paddingLeft;
+        const y = clientY - rect.top - paddingTop;
+        if (x < 0 || y < 0) return null;
+
+        // Hex centers for odd-r offset layout.
+        const roughRow = Math.round((y - cellH * 0.5) / rowStep);
+        let best = null;
+
+        for (let r = roughRow - 1; r <= roughRow + 1; r++) {
+            if (r < 0 || r >= GRID_SIZE) continue;
+            const rowOffset = (r % 2 === 1) ? colStep * 0.5 : 0;
+            const roughCol = Math.round((x - rowOffset - cellW * 0.5) / colStep);
+
+            for (let c = roughCol - 1; c <= roughCol + 1; c++) {
+                if (c < 0 || c >= GRID_SIZE) continue;
+
+                const cx = rowOffset + c * colStep + cellW * 0.5;
+                const cy = r * rowStep + cellH * 0.5;
+                const dx = Math.abs(x - cx) / (cellW * 0.58);
+                const dy = Math.abs(y - cy) / (cellH * 0.72);
+                const score = dx + dy;
+
+                if (!best || score < best.score) {
+                    best = { r, c, score };
+                }
+            }
+        }
+
+        if (!best) return null;
+        // Slightly permissive threshold so visual gaps still map to nearest cell.
+        if (best.score > 1.55) return null;
+        return { r: best.r, c: best.c };
     }
 
     function onGridPointerDown(e) {
